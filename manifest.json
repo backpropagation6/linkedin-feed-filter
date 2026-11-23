@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Feed Filter",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Filtra e nasconde automaticamente i post del feed di LinkedIn in base a parole chiave personalizzate.",
   "permissions": [
     "storage"

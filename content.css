@@ -3,6 +3,15 @@
 /* Modalità 1: Rimozione totale dal layout */
 .lff-hidden {
   display: none !important;
+  visibility: hidden !important;
+  height: 0px !important;
+  min-height: 0px !important;
+  max-height: 0px !important;
+  margin: 0px !important;
+  padding: 0px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Modalità 2: Post collassato con avviso discreto */

@@ -1,13 +1,13 @@
 /**
  * LinkedIn Feed Keyword Filter — Content Script
  * Manifest V3 compliant, zero blocking, real-time sync with storage.
- * Compatible with Chrome and Firefox (Manifest V3 / Firefox 109+).
+ * Compatible with Chrome and Firefox (Manifest V3 / Firefox 140+).
  */
 
 (() => {
   'use strict';
 
-  // Helper sicuro per accedere alle API di storage del browser
+  // Helper sicuro per accedere alle API di storage
   function getStorageArea() {
     if (typeof browser !== 'undefined' && browser?.storage?.local) {
       return browser.storage.local;
@@ -19,35 +19,22 @@
   }
 
   function getBrowserApi() {
-    if (typeof browser !== 'undefined' && browser?.storage) return browser;
-    if (typeof chrome !== 'undefined' && chrome?.storage) return chrome;
+    if (typeof browser !== 'undefined' && (browser?.storage || browser?.runtime)) return browser;
+    if (typeof chrome !== 'undefined' && (chrome?.storage || chrome?.runtime)) return chrome;
     return null;
   }
 
-  // Configurazione predefinita
+  // Configurazione attiva
   let config = {
     enabled: true,
     keywords: [],
-    filterMode: 'hide', // 'hide' (invisibile) oppure 'collapse' (barra compatta)
+    filterMode: 'hide' // 'hide' (invisibile) oppure 'collapse' (barra compatta)
   };
 
-  let blockedCount = 0;
   let scanScheduled = false;
 
-  // Selettori noti per i contenitori dei post su LinkedIn
-  const POST_SELECTORS = [
-    'div.feed-shared-update-v2',
-    'div.occludable-update',
-    'div[data-urn*="urn:li:activity"]',
-    'div[data-urn*="urn:li:aggregate"]',
-    'div[data-id*="urn:li:activity"]',
-    'div[data-view-name*="feed-full-update"]',
-    'div[data-view-name*="feed"]',
-    'article'
-  ];
-
   /**
-   * Carica la configurazione da storage (local, garantito su Chrome e Firefox)
+   * Carica la configurazione salvata
    */
   async function loadConfig() {
     try {
@@ -67,22 +54,31 @@
   }
 
   /**
-   * Restituisce il contenitore principale del post dato un elemento
+   * Raccoglie tutti i contenitori di post presenti nel feed
    */
-  function getPostContainer(node) {
-    if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
+  function getAllPostCards() {
+    const candidates = document.querySelectorAll([
+      'div.feed-shared-update-v2',
+      'div.occludable-update',
+      'div[data-urn*="urn:li:activity"]',
+      'div[data-urn*="urn:li:aggregate"]',
+      'div[data-id*="urn:li:activity"]',
+      'div[data-view-name*="feed-full-update"]'
+    ].join(', '));
 
-    // Se il nodo stesso è un post o è dentro un contenitore di post
-    return node.closest('.occludable-update') || 
-           node.closest('div.feed-shared-update-v2') || 
-           node.closest('div[data-urn*="urn:li:"]') || 
-           node.closest('div[data-view-name*="feed"]') ||
-           node.closest('article');
+    const posts = new Set();
+    for (const el of candidates) {
+      // Risali all'occludable-update o al feed-shared-update-v2
+      const card = el.closest('.occludable-update') || el.closest('.feed-shared-update-v2') || el;
+      if (card && card.isConnected) {
+        posts.add(card);
+      }
+    }
+    return Array.from(posts);
   }
 
   /**
-   * Controlla se il testo del post contiene una delle keyword attive
-   * Restituisce la keyword trovata o null
+   * Controlla se il testo del post contiene una delle keyword attive (ricerca case-insensitive robusta)
    */
   function findMatchingKeyword(text, keywords) {
     if (!text || !keywords || keywords.length === 0) return null;
@@ -92,107 +88,109 @@
       const kw = rawKw.trim().toLowerCase();
       if (!kw) continue;
 
-      // Se inizia con # o contiene spazi/caratteri speciali: match come sottostringa
-      if (kw.startsWith('#') || /\s|[^\w\s]/.test(kw)) {
-        if (lowerText.includes(kw)) {
-          return rawKw;
-        }
-      } else {
-        // Altrimenti parola intera con delimitatori o fallback substring
-        try {
-          const regex = new RegExp(`(^|\\W)${escapeRegExp(kw)}($|\\W)`, 'i');
-          if (regex.test(lowerText)) {
-            return rawKw;
-          }
-        } catch (e) {
-          if (lowerText.includes(kw)) {
-            return rawKw;
-          }
-        }
+      if (lowerText.includes(kw)) {
+        return rawKw;
       }
     }
     return null;
   }
 
-  function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-
   /**
-   * Filtra o ripristina un singolo post
+   * Valuta un singolo post
    */
-  function evaluatePost(post) {
-    if (!post || !post.isConnected) return;
+  function evaluatePost(card) {
+    if (!card || !card.isConnected) return;
 
-    // Se il filtro è disattivato globalmente, ripristina lo stato originale
+    // Se disattivato o nessuna parola chiave, ripristina
     if (!config.enabled || config.keywords.length === 0) {
-      unfilterPost(post);
+      unfilterPost(card);
       return;
     }
 
-    // Se l'utente ha già scelto manualmente di sbloccare questo post
-    if (post.dataset.lffUserAllowed === 'true') {
+    // Se l'utente ha sbloccato manualmente questo post
+    if (card.dataset.lffUserAllowed === 'true') {
       return;
     }
 
-    const postText = post.innerText || post.textContent || '';
-    if (!postText.trim()) return; // Non ha ancora caricato testo (lazy/occluded)
+    // textContent è infallibile: restituisce tutto il testo anche se parzialmente nascosto o occluso
+    const text = card.textContent || '';
+    if (!text.trim()) return;
 
-    const matchedKeyword = findMatchingKeyword(postText, config.keywords);
-
-    if (matchedKeyword) {
-      applyFilterToPost(post, matchedKeyword);
+    const matched = findMatchingKeyword(text, config.keywords);
+    if (matched) {
+      applyFilterToPost(card, matched);
     } else {
-      unfilterPost(post);
+      unfilterPost(card);
     }
-
-    post.dataset.lffChecked = 'true';
   }
 
   /**
-   * Applica il filtro al post in base alla modalità scelta
+   * Applica il filtro al post
    */
-  function applyFilterToPost(post, keyword) {
-    post.dataset.lffBlockedKeyword = keyword;
+  function applyFilterToPost(card, keyword) {
+    card.dataset.lffBlockedKeyword = keyword;
 
     if (config.filterMode === 'hide') {
-      // Modalità invisibile totale: classe + stile inline prioritario
-      removePlaceholder(post);
-      post.classList.add('lff-hidden');
-      post.style.setProperty('display', 'none', 'important');
+      removePlaceholder(card);
+      // Forza azzeramento dimensioni e sparizione totale
+      card.classList.add('lff-hidden');
+      card.style.setProperty('display', 'none', 'important');
+      card.style.setProperty('visibility', 'hidden', 'important');
+      card.style.setProperty('height', '0px', 'important');
+      card.style.setProperty('min-height', '0px', 'important');
+      card.style.setProperty('margin', '0px', 'important');
+      card.style.setProperty('padding', '0px', 'important');
+      card.style.setProperty('overflow', 'hidden', 'important');
+
+      // Nascondi anche i nodi interni diretti
+      const inners = card.querySelectorAll('.feed-shared-update-v2');
+      for (const inner of inners) {
+        inner.style.setProperty('display', 'none', 'important');
+      }
     } else {
       // Modalità collassata con banner informativo
-      post.classList.add('lff-hidden');
-      post.style.setProperty('display', 'none', 'important');
-      createOrUpdatePlaceholder(post, keyword);
+      card.classList.add('lff-hidden');
+      card.style.setProperty('display', 'none', 'important');
+      createOrUpdatePlaceholder(card, keyword);
     }
 
-    blockedCount++;
-    console.log(`[LinkedIn Feed Filter] Post nascosto (keyword: "${keyword}")`);
+    console.log(`[LinkedIn Feed Filter] Post nascosto: "${keyword}"`);
   }
 
   /**
-   * Rimuove il filtro dal post
+   * Ripristina il post originale
    */
-  function unfilterPost(post) {
-    post.classList.remove('lff-hidden');
-    post.style.removeProperty('display');
-    delete post.dataset.lffBlockedKeyword;
-    removePlaceholder(post);
+  function unfilterPost(card) {
+    card.classList.remove('lff-hidden');
+    card.style.removeProperty('display');
+    card.style.removeProperty('visibility');
+    card.style.removeProperty('height');
+    card.style.removeProperty('min-height');
+    card.style.removeProperty('margin');
+    card.style.removeProperty('padding');
+    card.style.removeProperty('overflow');
+
+    const inners = card.querySelectorAll('.feed-shared-update-v2');
+    for (const inner of inners) {
+      inner.style.removeProperty('display');
+    }
+
+    delete card.dataset.lffBlockedKeyword;
+    removePlaceholder(card);
   }
 
   /**
-   * Crea o aggiorna la barra di avviso discreta per i post collassati (sicuro per CSP)
+   * Banner discreto per post collassati
    */
-  function createOrUpdatePlaceholder(post, keyword) {
-    let placeholder = post.previousElementSibling;
+  function createOrUpdatePlaceholder(card, keyword) {
+    let placeholder = card.previousElementSibling;
     if (!placeholder || !placeholder.classList.contains('lff-collapsed-container')) {
       placeholder = document.createElement('div');
       placeholder.className = 'lff-collapsed-container';
-      post.parentNode.insertBefore(placeholder, post);
+      card.parentNode.insertBefore(placeholder, card);
     }
 
-    placeholder.textContent = ''; // pulizia
+    placeholder.textContent = '';
 
     const infoDiv = document.createElement('div');
     infoDiv.className = 'lff-collapsed-info';
@@ -219,9 +217,8 @@
     showBtn.textContent = 'Mostra';
 
     showBtn.addEventListener('click', () => {
-      post.dataset.lffUserAllowed = 'true';
-      post.classList.remove('lff-hidden');
-      post.style.removeProperty('display');
+      card.dataset.lffUserAllowed = 'true';
+      unfilterPost(card);
       placeholder.remove();
     }, { once: true });
 
@@ -229,95 +226,64 @@
     placeholder.appendChild(showBtn);
   }
 
-  function removePlaceholder(post) {
-    const prev = post.previousElementSibling;
+  function removePlaceholder(card) {
+    const prev = card.previousElementSibling;
     if (prev && prev.classList.contains('lff-collapsed-container')) {
       prev.remove();
     }
   }
 
-  function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
-  }
-
   /**
-   * Scansione scaglionata di tutti i post presenti nel DOM
+   * Scansione di tutti i post presenti
    */
   async function scanAllPosts() {
     scanScheduled = false;
+    const posts = getAllPostCards();
+    const BATCH = 15;
 
-    // Raccoglie tutti i post presenti nella pagina
-    const selectorQuery = POST_SELECTORS.join(', ');
-    const postElements = Array.from(document.querySelectorAll(selectorQuery));
-
-    // Dedup: se abbiamo selezionato sia un inner che un outer occludable-update
-    const uniquePosts = new Set();
-    for (const el of postElements) {
-      const mainPost = getPostContainer(el);
-      if (mainPost) uniquePosts.add(mainPost);
-    }
-
-    const postsArray = Array.from(uniquePosts);
-    const BATCH_SIZE = 15;
-
-    // Elaborazione a batch per non bloccare il frame rendering
-    for (let i = 0; i < postsArray.length; i += BATCH_SIZE) {
-      const chunk = postsArray.slice(i, i + BATCH_SIZE);
-      for (const post of chunk) {
-        evaluatePost(post);
+    for (let i = 0; i < posts.length; i += BATCH) {
+      const chunk = posts.slice(i, i + BATCH);
+      for (const card of chunk) {
+        evaluatePost(card);
       }
-      // Cede il controllo al browser per mantenere 60 FPS
-      await new Promise(resolve => requestAnimationFrame(resolve));
+      await new Promise(r => requestAnimationFrame(r));
     }
   }
 
-  /**
-   * Pianifica una scansione debouncata
-   */
   function scheduleScan() {
     if (scanScheduled) return;
     scanScheduled = true;
     requestAnimationFrame(() => {
-      setTimeout(scanAllPosts, 80);
+      setTimeout(scanAllPosts, 60);
     });
   }
 
-  /**
-   * Reset completo dei post per ricalcolo istantaneo
-   */
   function reevaluateAll() {
     document.querySelectorAll('.lff-collapsed-container').forEach(el => el.remove());
     document.querySelectorAll('.lff-hidden').forEach(el => el.classList.remove('lff-hidden'));
-    document.querySelectorAll('[data-lff-checked]').forEach(el => {
-      delete el.dataset.lffChecked;
+    document.querySelectorAll('[data-lff-blocked-keyword]').forEach(el => {
       delete el.dataset.lffBlockedKeyword;
     });
     scheduleScan();
   }
 
   /**
-   * Inizializzazione principale
+   * Inizializzazione
    */
   async function init() {
     await loadConfig();
-
-    // Scansione iniziale
     scheduleScan();
 
-    // Osservatore mutazioni DOM per i nuovi post caricati dallo scroll infinito
+    // 1. Observer per nuovi elementi aggiunti dallo scroll
     const observer = new MutationObserver(mutations => {
       let shouldScan = false;
-      for (const mutation of mutations) {
-        if (mutation.addedNodes.length > 0) {
+      for (const m of mutations) {
+        if (m.addedNodes.length > 0) {
           shouldScan = true;
           break;
         }
       }
-      if (shouldScan) {
-        scheduleScan();
-      }
+      if (shouldScan) scheduleScan();
     });
 
     observer.observe(document.body, {
@@ -325,11 +291,13 @@
       subtree: true
     });
 
-    // Ascolto in tempo reale dei cambiamenti dalle opzioni (popup)
+    // 2. Controllo periodico leggero (ogni 1.5s) per catturare elementi virtualizzati
+    setInterval(scheduleScan, 1500);
+
+    // 3. Ascolto storage onChanged nativo
     const api = getBrowserApi();
     if (api?.storage?.onChanged) {
       api.storage.onChanged.addListener((changes, areaName) => {
-        // In Firefox o Chrome l'evento può riportare 'local' o non specificare areaName
         if (!areaName || areaName === 'local') {
           let changed = false;
           if (changes.enabled) {
@@ -345,17 +313,28 @@
             changed = true;
           }
           if (changed) {
-            console.log('[LinkedIn Feed Filter] Configurazione aggiornata:', config);
+            console.log('[LinkedIn Feed Filter] Aggiornamento storage rilevato:', config);
             reevaluateAll();
           }
         }
       });
     }
 
-    console.log('[LinkedIn Feed Filter] Inizializzato con successo su:', window.location.hostname);
+    // 4. Ascolto messaggi diretti dal popup (canale alternativo infallibile)
+    if (api?.runtime?.onMessage) {
+      api.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+        if (msg && msg.type === 'LFF_CONFIG_UPDATED' && msg.config) {
+          console.log('[LinkedIn Feed Filter] Ricevuto messaggio diretto dal popup:', msg.config);
+          config = Object.assign({}, config, msg.config);
+          reevaluateAll();
+          if (typeof sendResponse === 'function') sendResponse({ status: 'ok' });
+        }
+      });
+    }
+
+    console.log('[LinkedIn Feed Filter] Attivo su:', window.location.hostname);
   }
 
-  // Avvio quando il DOM è pronto
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

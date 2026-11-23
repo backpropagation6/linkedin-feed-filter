@@ -60,15 +60,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   /**
-   * Salva lo stato corrente in storage
+   * Salva lo stato corrente in storage e notifica il tab attivo
    */
   async function saveState() {
     try {
-      await storage.set({
-        enabled: state.enabled,
-        keywords: state.keywords,
-        filterMode: state.filterMode
-      });
+      if (storage) {
+        await storage.set({
+          enabled: state.enabled,
+          keywords: state.keywords,
+          filterMode: state.filterMode
+        });
+      }
+
+      // Notifica diretta al tab attivo (canale ad alta priorità)
+      const api = getBrowserApi();
+      if (api?.tabs?.query) {
+        try {
+          const tabs = await api.tabs.query({ active: true, currentWindow: true });
+          if (tabs && tabs[0]?.id) {
+            await api.tabs.sendMessage(tabs[0].id, {
+              type: 'LFF_CONFIG_UPDATED',
+              config: {
+                enabled: state.enabled,
+                keywords: state.keywords,
+                filterMode: state.filterMode
+              }
+            });
+          }
+        } catch (e) {
+          // Tab non LinkedIn o non ancora pronto
+        }
+      }
+
       showStatus('Sincronizzato');
     } catch (err) {
       console.error('Errore durante il salvataggio:', err);
