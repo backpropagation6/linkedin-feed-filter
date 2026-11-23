@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LinkedIn Feed Filter</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="header">
+      <div class="logo-area">
+        <div class="logo-icon">✕</div>
+        <div>
+          <h1 class="title">LinkedIn Filter</h1>
+          <p class="subtitle">Pulizia feed per parole chiave</p>
+        </div>
+      </div>
+      <label class="switch" title="Attiva o disattiva il filtro">
+        <input type="checkbox" id="toggle-enabled" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <section class="section">
+      <label class="label" for="keyword-input">Aggiungi parola o frase chiave</label>
+      <form id="keyword-form" class="input-group">
+        <input 
+          type="text" 
+          id="keyword-input" 
+          placeholder="Es: crypto, hiring, webinar, sponsor..." 
+          autocomplete="off"
+          spellcheck="false"
+          required
+        >
+        <button type="submit" id="add-btn" class="btn btn-primary">Aggiungi</button>
+      </form>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
+        <span class="label">Parole chiave attive</span>
+        <span id="keyword-count" class="badge">0</span>
+      </div>
+      <div id="keyword-list" class="chip-container">
+        <!-- Generato dinamicamente da popup.js -->
+      </div>
+      <p id="empty-state" class="empty-state">
+        Nessuna parola chiave impostata.<br>Aggiungi una parola per nascondere i post indesiderati.
+      </p>
+    </section>
+
+    <section class="section options-section">
+      <span class="label">Modalità di visualizzazione</span>
+      <div class="mode-options">
+        <label class="radio-label">
+          <input type="radio" name="filter-mode" value="hide" id="mode-hide" checked>
+          <span><strong>Nascondi del tutto</strong> (spariscono dal feed)</span>
+        </label>
+        <label class="radio-label">
+          <input type="radio" name="filter-mode" value="collapse" id="mode-collapse">
+          <span><strong>Collassa con barra</strong> (barra discreta con tasto Mostra)</span>
+        </label>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span id="save-status" class="status-msg">Modifiche sincronizzate</span>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

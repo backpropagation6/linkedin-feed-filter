@@ -1,0 +1,73 @@
+/* LinkedIn Feed Keyword Filter — Styles */
+
+/* Modalità 1: Rimozione totale dal layout */
+.lff-hidden {
+  display: none !important;
+}
+
+/* Modalità 2: Post collassato con avviso discreto */
+.lff-collapsed-container {
+  border: 1px dashed rgba(120, 144, 156, 0.4) !important;
+  border-radius: 8px !important;
+  margin-bottom: 8px !important;
+  background: rgba(243, 246, 248, 0.7) !important;
+  padding: 10px 16px !important;
+  font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 13px !important;
+  color: #5e5e5e !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  transition: all 0.2s ease !important;
+}
+
+/* Dark mode compatibility for LinkedIn */
+@media (prefers-color-scheme: dark) {
+  .lff-collapsed-container {
+    background: rgba(27, 38, 44, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #a0a0a0 !important;
+  }
+}
+
+.lff-collapsed-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lff-badge {
+  background-color: #e02424;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.lff-keyword-tag {
+  font-weight: 600;
+  color: #0a66c2;
+  background: rgba(10, 102, 194, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.lff-show-btn {
+  background: transparent;
+  border: 1px solid #0a66c2;
+  color: #0a66c2;
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lff-show-btn:hover {
+  background: #0a66c2;
+  color: #ffffff;
+}

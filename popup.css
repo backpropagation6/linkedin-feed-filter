@@ -1,0 +1,305 @@
+/* LinkedIn Feed Filter — Popup CSS */
+
+:root {
+  --bg-color: #ffffff;
+  --text-main: #191919;
+  --text-muted: #666666;
+  --primary: #0a66c2;
+  --primary-hover: #004182;
+  --border-color: #e0e0e0;
+  --chip-bg: #f3f6f8;
+  --chip-hover: #e5e9ec;
+  --danger: #cf3c3c;
+  --success: #057642;
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #1b1f23;
+    --text-main: #f0f3f6;
+    --text-muted: #959da5;
+    --border-color: #30363d;
+    --chip-bg: #24292f;
+    --chip-hover: #32383f;
+    --primary: #388bfd;
+    --primary-hover: #58a6ff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  width: 340px;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-family);
+  font-size: 13px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.popup-container {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 28px;
+  height: 28px;
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.subtitle {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Switch Toggle */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 22px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.2s;
+  border-radius: 22px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+/* Sections */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--chip-bg);
+  border: 1px solid var(--border-color);
+  padding: 1px 6px;
+  border-radius: 10px;
+  color: var(--text-muted);
+}
+
+/* Input group */
+.input-group {
+  display: flex;
+  gap: 8px;
+}
+
+.input-group input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--bg-color);
+  color: var(--text-main);
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-group input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(10, 102, 194, 0.2);
+}
+
+.btn {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+/* Chips / Tags */
+.chip-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 130px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--chip-bg);
+  border: 1px solid var(--border-color);
+  color: var(--text-main);
+  padding: 4px 8px;
+  border-radius: 14px;
+  font-size: 12px;
+  transition: all 0.15s ease;
+}
+
+.chip:hover {
+  background: var(--chip-hover);
+}
+
+.chip-remove {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.chip-remove:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.empty-state {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 12px 8px;
+  background: var(--chip-bg);
+  border-radius: 6px;
+  border: 1px dashed var(--border-color);
+}
+
+/* Mode Options */
+.options-section {
+  border-top: 1px solid var(--border-color);
+  padding-top: 12px;
+}
+
+.mode-options {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.radio-label input {
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--border-color);
+  padding-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status-msg {
+  font-size: 11px;
+  color: var(--success);
+  opacity: 0.9;
+}
