@@ -7,13 +7,22 @@
 (() => {
   'use strict';
 
-  // Browser compatibility shim.
-  // Firefox MV3 exposes `browser` (promise-based) and `chrome` as alias.
-  // We prefer `browser` on Firefox to avoid chrome.storage.sync issues
-  // in content script context. We always use storage.local (guaranteed
-  // available on both browsers without requiring Firefox Sync).
-  const ext = (typeof browser !== 'undefined' && browser?.storage) ? browser : chrome;
-  const storageArea = ext.storage.local;
+  // Helper sicuro per accedere alle API di storage del browser
+  function getStorageArea() {
+    if (typeof browser !== 'undefined' && browser?.storage?.local) {
+      return browser.storage.local;
+    }
+    if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+      return chrome.storage.local;
+    }
+    return null;
+  }
+
+  function getBrowserApi() {
+    if (typeof browser !== 'undefined' && browser?.storage) return browser;
+    if (typeof chrome !== 'undefined' && chrome?.storage) return chrome;
+    return null;
+  }
 
   // Configurazione predefinita
   let config = {
@@ -42,7 +51,10 @@
    */
   async function loadConfig() {
     try {
-      const data = await storageArea.get(['enabled', 'keywords', 'filterMode']);
+      const storage = getStorageArea();
+      if (!storage) return;
+
+      const data = await storage.get(['enabled', 'keywords', 'filterMode']);
       if (data) {
         if (typeof data.enabled === 'boolean') config.enabled = data.enabled;
         if (Array.isArray(data.keywords)) config.keywords = data.keywords;
@@ -314,28 +326,31 @@
     });
 
     // Ascolto in tempo reale dei cambiamenti dalle opzioni (popup)
-    ext.storage.onChanged.addListener((changes, areaName) => {
-      // In Firefox o Chrome l'evento può riportare 'local' o non specificare areaName
-      if (!areaName || areaName === 'local') {
-        let changed = false;
-        if (changes.enabled) {
-          config.enabled = changes.enabled.newValue;
-          changed = true;
+    const api = getBrowserApi();
+    if (api?.storage?.onChanged) {
+      api.storage.onChanged.addListener((changes, areaName) => {
+        // In Firefox o Chrome l'evento può riportare 'local' o non specificare areaName
+        if (!areaName || areaName === 'local') {
+          let changed = false;
+          if (changes.enabled) {
+            config.enabled = changes.enabled.newValue;
+            changed = true;
+          }
+          if (changes.keywords) {
+            config.keywords = changes.keywords.newValue || [];
+            changed = true;
+          }
+          if (changes.filterMode) {
+            config.filterMode = changes.filterMode.newValue || 'hide';
+            changed = true;
+          }
+          if (changed) {
+            console.log('[LinkedIn Feed Filter] Configurazione aggiornata:', config);
+            reevaluateAll();
+          }
         }
-        if (changes.keywords) {
-          config.keywords = changes.keywords.newValue || [];
-          changed = true;
-        }
-        if (changes.filterMode) {
-          config.filterMode = changes.filterMode.newValue || 'hide';
-          changed = true;
-        }
-        if (changed) {
-          console.log('[LinkedIn Feed Filter] Configurazione aggiornata:', config);
-          reevaluateAll();
-        }
-      }
-    });
+      });
+    }
 
     console.log('[LinkedIn Feed Filter] Inizializzato con successo su:', window.location.hostname);
   }

@@ -4,10 +4,22 @@
  * Compatible with Chrome and Firefox (Manifest V3 / Firefox 109+).
  */
 
-// Browser compatibility shim.
-// Always use storage.local: works on Chrome and Firefox without requiring Firefox Sync.
-const ext = (typeof browser !== 'undefined' && browser?.storage) ? browser : chrome;
-const storageArea = ext.storage.local;
+// Browser compatibility helpers
+function getStorageArea() {
+  if (typeof browser !== 'undefined' && browser?.storage?.local) {
+    return browser.storage.local;
+  }
+  if (typeof chrome !== 'undefined' && chrome?.storage?.local) {
+    return chrome.storage.local;
+  }
+  return null;
+}
+
+function getBrowserApi() {
+  if (typeof browser !== 'undefined' && browser?.storage) return browser;
+  if (typeof chrome !== 'undefined' && chrome?.storage) return chrome;
+  return null;
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
   'use strict';
@@ -30,7 +42,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     filterMode: 'hide'
   };
 
-  const storage = storageArea;
+  const storage = getStorageArea();
 
   /**
    * Mostra un breve feedback visivo di salvataggio
@@ -153,9 +165,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     const warningEl = document.getElementById('permission-warning');
     if (!warningEl) return;
 
-    if (ext.permissions && ext.permissions.contains) {
+    const api = getBrowserApi();
+    if (api?.permissions?.contains) {
       try {
-        const has = await ext.permissions.contains({
+        const has = await api.permissions.contains({
           origins: ['*://*.linkedin.com/*', '*://linkedin.com/*']
         });
         warningEl.style.display = has ? 'none' : 'flex';
@@ -168,9 +181,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const grantBtn = document.getElementById('grant-permission-btn');
   if (grantBtn) {
     grantBtn.addEventListener('click', async () => {
-      if (ext.permissions && ext.permissions.request) {
+      const api = getBrowserApi();
+      if (api?.permissions?.request) {
         try {
-          const granted = await ext.permissions.request({
+          const granted = await api.permissions.request({
             origins: ['*://*.linkedin.com/*', '*://linkedin.com/*']
           });
           if (granted) {
