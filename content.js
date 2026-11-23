@@ -1,16 +1,19 @@
 /**
  * LinkedIn Feed Keyword Filter — Content Script
  * Manifest V3 compliant, zero blocking, real-time sync with storage.
- * Compatible with Chrome and Firefox (Manifest V3).
+ * Compatible with Chrome and Firefox (Manifest V3 / Firefox 109+).
  */
 
 (() => {
   'use strict';
 
-  // Browser compatibility shim: Firefox exposes `browser`, Chrome exposes `chrome`.
-  // Both support the chrome.* namespace in MV3 (Firefox 109+), but this ensures
-  // the storage.sync fallback works identically on both engines.
-  const ext = (typeof browser !== 'undefined' && browser.storage) ? browser : chrome;
+  // Browser compatibility shim.
+  // Firefox MV3 exposes `browser` (promise-based) and `chrome` as alias.
+  // We prefer `browser` on Firefox to avoid chrome.storage.sync issues
+  // in content script context. We always use storage.local (guaranteed
+  // available on both browsers without requiring Firefox Sync).
+  const ext = (typeof browser !== 'undefined' && browser?.storage) ? browser : chrome;
+  const storageArea = ext.storage.local;
 
   // Configurazione predefinita
   let config = {
@@ -32,12 +35,11 @@
   ];
 
   /**
-   * Carica la configurazione da storage (sync con fallback su local)
+   * Carica la configurazione da storage (local, garantito su Chrome e Firefox)
    */
   async function loadConfig() {
     try {
-      const storage = ext.storage.sync || ext.storage.local;
-      const data = await storage.get(['enabled', 'keywords', 'filterMode']);
+      const data = await storageArea.get(['enabled', 'keywords', 'filterMode']);
       
       if (typeof data.enabled === 'boolean') config.enabled = data.enabled;
       if (Array.isArray(data.keywords)) config.keywords = data.keywords;
@@ -281,7 +283,7 @@
 
     // Ascolto in tempo reale dei cambiamenti dalle opzioni (popup)
     ext.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'sync' || areaName === 'local') {
+      if (areaName === 'local') {
         let changed = false;
         if (changes.enabled) {
           config.enabled = changes.enabled.newValue;

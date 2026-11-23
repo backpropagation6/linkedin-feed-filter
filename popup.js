@@ -1,11 +1,13 @@
 /**
  * LinkedIn Feed Keyword Filter — Popup Logic
  * Manifest V3, pure async/await, no inline handlers.
- * Compatible with Chrome and Firefox (Manifest V3).
+ * Compatible with Chrome and Firefox (Manifest V3 / Firefox 109+).
  */
 
-// Browser compatibility shim
-const ext = (typeof browser !== 'undefined' && browser.storage) ? browser : chrome;
+// Browser compatibility shim.
+// Always use storage.local: works on Chrome and Firefox without requiring Firefox Sync.
+const ext = (typeof browser !== 'undefined' && browser?.storage) ? browser : chrome;
+const storageArea = ext.storage.local;
 
 document.addEventListener('DOMContentLoaded', async () => {
   'use strict';
@@ -28,7 +30,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     filterMode: 'hide'
   };
 
-  const storage = ext.storage.sync || ext.storage.local;
+  const storage = storageArea;
 
   /**
    * Mostra un breve feedback visivo di salvataggio
