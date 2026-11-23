@@ -295,7 +295,20 @@ input:checked + .slider:before {
   border-top: 1px solid var(--border-color);
   padding-top: 10px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-status {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
 .status-msg {

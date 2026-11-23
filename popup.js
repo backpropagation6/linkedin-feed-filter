@@ -1,7 +1,7 @@
 /**
  * LinkedIn Feed Keyword Filter — Popup Logic
  * Manifest V3, pure async/await, no inline handlers.
- * Compatible with Chrome and Firefox (Manifest V3 / Firefox 109+).
+ * Compatible with Chrome and Firefox (Manifest V3).
  */
 
 // Browser compatibility helpers
@@ -34,6 +34,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const modeHide = document.getElementById('mode-hide');
   const modeCollapse = document.getElementById('mode-collapse');
   const saveStatus = document.getElementById('save-status');
+  const pageStatus = document.getElementById('page-status');
+  const detectionWarning = document.getElementById('detection-warning');
 
   // Stato locale
   let state = {
@@ -60,6 +62,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   /**
+   * Invia un messaggio al content script della scheda attiva.
+   * Restituisce null se la scheda non è LinkedIn o non è ancora pronta.
+   */
+  async function sendToActiveTab(message) {
+    const api = getBrowserApi();
+    if (!api?.tabs?.query) return null;
+    try {
+      const tabs = await api.tabs.query({ active: true, currentWindow: true });
+      if (!tabs || !tabs[0]?.id) return null;
+      return (await api.tabs.sendMessage(tabs[0].id, message)) || null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /**
+   * Chiede alla scheda attiva quanti post vede e quanti ne ha nascosti.
+   * Se sul feed non riconosce nessun post, mostra l'avviso.
+   */
+  async function refreshPageStatus() {
+    const status = await sendToActiveTab({ type: 'LFF_GET_STATUS' });
+    if (!status) {
+      pageStatus.textContent = '';
+      detectionWarning.style.display = 'none';
+      return;
+    }
+
+    detectionWarning.style.display = status.detectionFailed ? 'flex' : 'none';
+    if (status.detectionFailed || status.posts === 0) {
+      pageStatus.textContent = '';
+    } else if (!status.active) {
+      pageStatus.textContent = `${status.posts} post in pagina`;
+    } else {
+      const word = status.filtered === 1 ? 'nascosto' : 'nascosti';
+      pageStatus.textContent = `${status.filtered} ${word} su ${status.posts} post in pagina`;
+    }
+  }
+
+  /**
    * Salva lo stato corrente in storage e notifica il tab attivo
    */
   async function saveState() {
@@ -72,27 +113,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
       }
 
-      // Notifica diretta al tab attivo (canale ad alta priorità)
-      const api = getBrowserApi();
-      if (api?.tabs?.query) {
-        try {
-          const tabs = await api.tabs.query({ active: true, currentWindow: true });
-          if (tabs && tabs[0]?.id) {
-            await api.tabs.sendMessage(tabs[0].id, {
-              type: 'LFF_CONFIG_UPDATED',
-              config: {
-                enabled: state.enabled,
-                keywords: state.keywords,
-                filterMode: state.filterMode
-              }
-            });
-          }
-        } catch (e) {
-          // Tab non LinkedIn o non ancora pronto
+      // Notifica diretta alla scheda attiva (le altre schede si aggiornano dallo storage)
+      await sendToActiveTab({
+        type: 'LFF_CONFIG_UPDATED',
+        config: {
+          enabled: state.enabled,
+          keywords: state.keywords,
+          filterMode: state.filterMode
         }
-      }
+      });
 
       showStatus('Sincronizzato');
+      await refreshPageStatus();
     } catch (err) {
       console.error('Errore durante il salvataggio:', err);
       showStatus('Errore salvataggio');
@@ -124,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       const removeBtn = document.createElement('span');
       removeBtn.className = 'chip-remove';
-      removeBtn.innerHTML = '&times;';
+      removeBtn.textContent = '×';
       removeBtn.title = `Rimuovi "${keyword}"`;
       removeBtn.setAttribute('role', 'button');
       removeBtn.setAttribute('tabindex', '0');
@@ -176,6 +208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       renderKeywords();
       await checkPermissions();
+      await refreshPageStatus();
     } catch (err) {
       console.error('Errore durante il caricamento dello stato:', err);
     }

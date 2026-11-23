@@ -1,21 +1,18 @@
 /* LinkedIn Feed Keyword Filter — Styles */
 
-/* Modalità 1: Rimozione totale dal layout */
-.lff-hidden {
+/*
+ * Post filtrato. Lo stato sta in un attributo e non in una classe: LinkedIn
+ * riscrive le classi dei propri elementi a ogni aggiornamento della pagina.
+ */
+[data-lff-state="hidden"],
+[data-lff-state="collapsed"] {
   display: none !important;
-  visibility: hidden !important;
-  height: 0px !important;
-  min-height: 0px !important;
-  max-height: 0px !important;
-  margin: 0px !important;
-  padding: 0px !important;
-  overflow: hidden !important;
-  opacity: 0 !important;
-  pointer-events: none !important;
 }
 
-/* Modalità 2: Post collassato con avviso discreto */
+/* Modalità "collassa": avviso discreto al posto del post */
 .lff-collapsed-container {
+  box-sizing: border-box !important;
+  width: 100% !important;
   border: 1px dashed rgba(120, 144, 156, 0.4) !important;
   border-radius: 8px !important;
   margin-bottom: 8px !important;
@@ -27,7 +24,7 @@
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  transition: all 0.2s ease !important;
+  gap: 12px !important;
 }
 
 /* Dark mode compatibility for LinkedIn */
@@ -43,6 +40,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .lff-badge {
@@ -62,9 +60,13 @@
   background: rgba(10, 102, 194, 0.1);
   padding: 2px 6px;
   border-radius: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .lff-show-btn {
+  flex-shrink: 0;
   background: transparent;
   border: 1px solid #0a66c2;
   color: #0a66c2;

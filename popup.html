@@ -30,6 +30,13 @@
       <button type="button" id="grant-permission-btn" class="btn btn-warning">Abilita su LinkedIn</button>
     </div>
 
+    <div id="detection-warning" class="permission-warning" style="display: none;">
+      <div class="permission-text">
+        <strong>⚠️ Post non riconosciuti</strong>
+        <span>In questa pagina non trovo i post del feed: LinkedIn potrebbe aver cambiato la struttura. Ricarica la pagina; se resta così, serve un aggiornamento dell'estensione.</span>
+      </div>
+    </div>
+
     <section class="section">
       <label class="label" for="keyword-input">Aggiungi parola o frase chiave</label>
       <form id="keyword-form" class="input-group">
@@ -43,6 +50,7 @@
         >
         <button type="submit" id="add-btn" class="btn btn-primary">Aggiungi</button>
       </form>
+      <p class="hint">Vale la parola intera, senza distinzione fra maiuscole e minuscole.</p>
     </section>
 
     <section class="section">
@@ -73,6 +81,7 @@
     </section>
 
     <footer class="footer">
+      <span id="page-status" class="page-status"></span>
       <span id="save-status" class="status-msg">Modifiche sincronizzate</span>
     </footer>
   </div>

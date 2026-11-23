@@ -4,3 +4,7 @@
 node_modules/
 .vscode/
 .idea/
+
+# Pacchetti e materiali per gli store (non fanno parte del sorgente)
+dist/
+store/
