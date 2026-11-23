@@ -9,6 +9,12 @@
   "host_permissions": [
     "*://*.linkedin.com/*"
   ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "linkedin-feed-filter@giovanniliguori.it",
+      "strict_min_version": "109.0"
+    }
+  },
   "action": {
     "default_popup": "popup.html",
     "default_title": "LinkedIn Feed Filter",

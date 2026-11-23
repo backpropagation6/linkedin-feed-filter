@@ -1,10 +1,16 @@
 /**
  * LinkedIn Feed Keyword Filter — Content Script
  * Manifest V3 compliant, zero blocking, real-time sync with storage.
+ * Compatible with Chrome and Firefox (Manifest V3).
  */
 
 (() => {
   'use strict';
+
+  // Browser compatibility shim: Firefox exposes `browser`, Chrome exposes `chrome`.
+  // Both support the chrome.* namespace in MV3 (Firefox 109+), but this ensures
+  // the storage.sync fallback works identically on both engines.
+  const ext = (typeof browser !== 'undefined' && browser.storage) ? browser : chrome;
 
   // Configurazione predefinita
   let config = {
@@ -30,7 +36,7 @@
    */
   async function loadConfig() {
     try {
-      const storage = chrome.storage.sync || chrome.storage.local;
+      const storage = ext.storage.sync || ext.storage.local;
       const data = await storage.get(['enabled', 'keywords', 'filterMode']);
       
       if (typeof data.enabled === 'boolean') config.enabled = data.enabled;
@@ -274,7 +280,7 @@
     });
 
     // Ascolto in tempo reale dei cambiamenti dalle opzioni (popup)
-    chrome.storage.onChanged.addListener((changes, areaName) => {
+    ext.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'sync' || areaName === 'local') {
         let changed = false;
         if (changes.enabled) {

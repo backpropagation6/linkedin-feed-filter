@@ -1,6 +1,6 @@
 # 🛡️ LinkedIn Feed Keyword Filter
 
-> Clean your LinkedIn feed from noise, buzzwords, and repetitive topics. A lightweight, privacy-first Chrome Extension (Manifest V3) that automatically filters and hides posts based on your custom keywords.
+> Clean your LinkedIn feed from noise, buzzwords, and repetitive topics. A lightweight, privacy-first browser extension (Manifest V3) that automatically filters and hides posts based on your custom keywords.
 
 <p align="center">
   <img src="assets/demo.gif" alt="LinkedIn Feed Filter in action" width="720" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
@@ -8,9 +8,10 @@
 
 <p align="center">
   <a href="#why"><img src="https://img.shields.io/badge/Privacy-100%25%20Local-success?style=flat-square" alt="Privacy"></a>
-  <a href="#installation"><img src="https://img.shields.io/badge/Chrome-Manifest%20V3-blue?style=flat-square" alt="Manifest V3"></a>
+  <a href="#-installation"><img src="https://img.shields.io/badge/Chrome-Manifest%20V3-blue?style=flat-square" alt="Chrome MV3"></a>
+  <a href="#-installation"><img src="https://img.shields.io/badge/Firefox-MV3%20109%2B-orange?style=flat-square" alt="Firefox MV3"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="MIT License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/Dependencies-0-orange?style=flat-square" alt="Zero Dependencies"></a>
+  <a href="#"><img src="https://img.shields.io/badge/Dependencies-0-lightgrey?style=flat-square" alt="Zero Dependencies"></a>
 </p>
 
 ---
@@ -38,13 +39,13 @@ Your LinkedIn feed is often flooded with content you simply don't want to see:
   - Handles hashtags (e.g. `#crypto`, `#hiring`).
   - Handles multi-word phrases (e.g. `growth hacking`, `open for work`).
 - **🚀 60 FPS Smooth Scroll**: Built with `requestAnimationFrame` debouncing and batching so your browser stays fast and responsive.
-- **🔒 100% Private & Open Source**: No remote servers, no analytics, no tracking. Runs entirely inside your browser using Chrome's native storage.
+- **🔒 100% Private & Open Source**: No remote servers, no analytics, no tracking. Runs entirely inside your browser using the native storage API.
 
 ---
 
-## 🛠️ Installation (Takes 20 seconds)
+## 🛠️ Installation
 
-Since this is an open-source extension, you can install it directly in Developer Mode:
+### 🟦 Google Chrome / Brave / Edge (Chromium-based)
 
 1. **Clone or Download** this repository:
    ```bash
@@ -52,18 +53,42 @@ Since this is an open-source extension, you can install it directly in Developer
    ```
    *(Or click **Code > Download ZIP** on GitHub and unzip it)*.
 
-2. Open **Google Chrome** and navigate to:
+2. Open your browser and navigate to:
    ```text
    chrome://extensions/
    ```
 
-3. Toggle **Developer mode** on (top-right corner of the page).
+3. Toggle **Developer mode** on (top-right corner).
 
 4. Click **Load unpacked** (top-left button).
 
 5. Select the `linkedin-feed-filter` folder.
 
-6. **Done!** Pin the filter icon to your browser bar for easy access.
+6. **Done!** Pin the icon to your toolbar for quick access.
+
+---
+
+### 🦊 Firefox (109+)
+
+Firefox supports Manifest V3 natively since version 109. No separate build needed — the same extension works as-is.
+
+1. **Clone or Download** this repository:
+   ```bash
+   git clone https://github.com/backpropagation6/linkedin-feed-filter.git
+   ```
+
+2. Open Firefox and navigate to:
+   ```text
+   about:debugging#/runtime/this-firefox
+   ```
+
+3. Click **Load Temporary Add-on…**
+
+4. Navigate into the `linkedin-feed-filter` folder and select **`manifest.json`**.
+
+5. **Done!** The extension is active for this Firefox session.
+
+> **Note**: Temporary add-ons in Firefox are removed when you close the browser. For a permanent install, the extension needs to be signed by Mozilla. You can submit it to [addons.mozilla.org (AMO)](https://addons.mozilla.org/en-US/developers/) for free distribution and permanent installation.
 
 ---
 
@@ -90,11 +115,24 @@ linkedin-feed-filter/
 ├── popup.html               # Clean, accessible settings popup
 ├── popup.css                # Dark & light mode UI styling
 ├── popup.js                 # Keyword management and sync logic
-├── manifest.json            # Manifest V3 specification
+├── manifest.json            # Manifest V3 (Chrome + Firefox compatible)
 ├── scripts/
 │   └── generate_icons.py    # Icon generator utility
 └── README.md
 ```
+
+---
+
+## 🌐 Browser Compatibility
+
+| Browser | Support | Notes |
+|---------|---------|-------|
+| Chrome 88+ | ✅ Full | Native MV3 |
+| Brave | ✅ Full | Chromium-based |
+| Edge (Chromium) | ✅ Full | Chromium-based |
+| Firefox 109+ | ✅ Full | Native MV3, `browser_specific_settings` included |
+| Safari | ❌ Not supported | Requires Safari Web Extension conversion |
+| Opera | ✅ Full | Chromium-based |
 
 ---
 
