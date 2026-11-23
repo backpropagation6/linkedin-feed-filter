@@ -68,9 +68,9 @@ Your LinkedIn feed is often flooded with content you simply don't want to see:
 
 ---
 
-### 🦊 Firefox (109+)
+### 🦊 Firefox (142+)
 
-Firefox supports Manifest V3 natively since version 109. No separate build needed — the same extension works as-is.
+Firefox supports Manifest V3 natively. No separate build or branch needed — the same extension works as-is on both Chrome and Firefox.
 
 1. **Clone or Download** this repository:
    ```bash
@@ -86,9 +86,7 @@ Firefox supports Manifest V3 natively since version 109. No separate build neede
 
 4. Navigate into the `linkedin-feed-filter` folder and select **`manifest.json`**.
 
-5. **Done!** The extension is active for this Firefox session.
-
-> **Note**: Temporary add-ons in Firefox are removed when you close the browser. For a permanent install, the extension needs to be signed by Mozilla. You can submit it to [addons.mozilla.org (AMO)](https://addons.mozilla.org/en-US/developers/) for free distribution and permanent installation.
+5. **Done!** Open LinkedIn and click the extension icon. If Firefox asks for permission to access LinkedIn, click **Abilita su LinkedIn** directly in the popup or in the browser prompt.
 
 ---
 

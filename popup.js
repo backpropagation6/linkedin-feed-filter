@@ -140,9 +140,49 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
 
       renderKeywords();
+      await checkPermissions();
     } catch (err) {
       console.error('Errore durante il caricamento dello stato:', err);
     }
+  }
+
+  /**
+   * Verifica se l'estensione ha accesso a LinkedIn (su Firefox MV3 le host permissions sono runtime)
+   */
+  async function checkPermissions() {
+    const warningEl = document.getElementById('permission-warning');
+    if (!warningEl) return;
+
+    if (ext.permissions && ext.permissions.contains) {
+      try {
+        const has = await ext.permissions.contains({
+          origins: ['*://*.linkedin.com/*', '*://linkedin.com/*']
+        });
+        warningEl.style.display = has ? 'none' : 'flex';
+      } catch (e) {
+        console.warn('[LinkedIn Feed Filter] Errore verifica permessi:', e);
+      }
+    }
+  }
+
+  const grantBtn = document.getElementById('grant-permission-btn');
+  if (grantBtn) {
+    grantBtn.addEventListener('click', async () => {
+      if (ext.permissions && ext.permissions.request) {
+        try {
+          const granted = await ext.permissions.request({
+            origins: ['*://*.linkedin.com/*', '*://linkedin.com/*']
+          });
+          if (granted) {
+            const warningEl = document.getElementById('permission-warning');
+            if (warningEl) warningEl.style.display = 'none';
+            showStatus('Permesso accordato! Ricarica LinkedIn');
+          }
+        } catch (err) {
+          console.error('[LinkedIn Feed Filter] Errore richiesta permesso:', err);
+        }
+      }
+    });
   }
 
   // Listener per aggiunta keyword

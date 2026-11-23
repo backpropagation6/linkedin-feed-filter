@@ -30,8 +30,11 @@
     'div.feed-shared-update-v2',
     'div.occludable-update',
     'div[data-urn*="urn:li:activity"]',
+    'div[data-urn*="urn:li:aggregate"]',
     'div[data-id*="urn:li:activity"]',
-    'div[data-view-name*="feed-full-update"]'
+    'div[data-view-name*="feed-full-update"]',
+    'div[data-view-name*="feed"]',
+    'article'
   ];
 
   /**
@@ -40,10 +43,12 @@
   async function loadConfig() {
     try {
       const data = await storageArea.get(['enabled', 'keywords', 'filterMode']);
-      
-      if (typeof data.enabled === 'boolean') config.enabled = data.enabled;
-      if (Array.isArray(data.keywords)) config.keywords = data.keywords;
-      if (data.filterMode) config.filterMode = data.filterMode;
+      if (data) {
+        if (typeof data.enabled === 'boolean') config.enabled = data.enabled;
+        if (Array.isArray(data.keywords)) config.keywords = data.keywords;
+        if (data.filterMode) config.filterMode = data.filterMode;
+      }
+      console.log('[LinkedIn Feed Filter] Configurazione attiva:', config);
     } catch (err) {
       console.warn('[LinkedIn Feed Filter] Errore caricamento storage:', err);
     }
@@ -55,18 +60,12 @@
   function getPostContainer(node) {
     if (!node || node.nodeType !== Node.ELEMENT_NODE) return null;
 
-    // Se il nodo stesso è un post
-    for (const sel of POST_SELECTORS) {
-      if (node.matches && node.matches(sel)) {
-        return node.closest('.occludable-update') || node;
-      }
-    }
-
-    // Se è un elemento discendente
+    // Se il nodo stesso è un post o è dentro un contenitore di post
     return node.closest('.occludable-update') || 
            node.closest('div.feed-shared-update-v2') || 
-           node.closest('div[data-urn*="urn:li:activity"]') ||
-           node.closest('div[data-view-name*="feed-full-update"]');
+           node.closest('div[data-urn*="urn:li:"]') || 
+           node.closest('div[data-view-name*="feed"]') ||
+           node.closest('article');
   }
 
   /**
@@ -87,10 +86,16 @@
           return rawKw;
         }
       } else {
-        // Altrimenti parola intera per evitare falsi positivi (es. "pro" in "programmatore")
-        const regex = new RegExp(`\\b${escapeRegExp(kw)}\\b`, 'i');
-        if (regex.test(lowerText)) {
-          return rawKw;
+        // Altrimenti parola intera con delimitatori o fallback substring
+        try {
+          const regex = new RegExp(`(^|\\W)${escapeRegExp(kw)}($|\\W)`, 'i');
+          if (regex.test(lowerText)) {
+            return rawKw;
+          }
+        } catch (e) {
+          if (lowerText.includes(kw)) {
+            return rawKw;
+          }
         }
       }
     }
@@ -119,6 +124,8 @@
     }
 
     const postText = post.innerText || post.textContent || '';
+    if (!postText.trim()) return; // Non ha ancora caricato testo (lazy/occluded)
+
     const matchedKeyword = findMatchingKeyword(postText, config.keywords);
 
     if (matchedKeyword) {
@@ -137,16 +144,19 @@
     post.dataset.lffBlockedKeyword = keyword;
 
     if (config.filterMode === 'hide') {
-      // Modalità invisibile totale
+      // Modalità invisibile totale: classe + stile inline prioritario
       removePlaceholder(post);
       post.classList.add('lff-hidden');
+      post.style.setProperty('display', 'none', 'important');
     } else {
       // Modalità collassata con banner informativo
       post.classList.add('lff-hidden');
+      post.style.setProperty('display', 'none', 'important');
       createOrUpdatePlaceholder(post, keyword);
     }
 
     blockedCount++;
+    console.log(`[LinkedIn Feed Filter] Post nascosto (keyword: "${keyword}")`);
   }
 
   /**
@@ -154,12 +164,13 @@
    */
   function unfilterPost(post) {
     post.classList.remove('lff-hidden');
+    post.style.removeProperty('display');
     delete post.dataset.lffBlockedKeyword;
     removePlaceholder(post);
   }
 
   /**
-   * Crea o aggiorna la barra di avviso discreta per i post collassati
+   * Crea o aggiorna la barra di avviso discreta per i post collassati (sicuro per CSP)
    */
   function createOrUpdatePlaceholder(post, keyword) {
     let placeholder = post.previousElementSibling;
@@ -169,20 +180,41 @@
       post.parentNode.insertBefore(placeholder, post);
     }
 
-    placeholder.innerHTML = `
-      <div class="lff-collapsed-info">
-        <span class="lff-badge">Nascosto</span>
-        <span>Post contenente la parola chiave <span class="lff-keyword-tag">${escapeHtml(keyword)}</span></span>
-      </div>
-      <button type="button" class="lff-show-btn" title="Mostra questo post">Mostra</button>
-    `;
+    placeholder.textContent = ''; // pulizia
 
-    const showBtn = placeholder.querySelector('.lff-show-btn');
+    const infoDiv = document.createElement('div');
+    infoDiv.className = 'lff-collapsed-info';
+
+    const badge = document.createElement('span');
+    badge.className = 'lff-badge';
+    badge.textContent = 'Nascosto';
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = 'Post contenente: ';
+
+    const kwSpan = document.createElement('span');
+    kwSpan.className = 'lff-keyword-tag';
+    kwSpan.textContent = keyword;
+
+    infoDiv.appendChild(badge);
+    infoDiv.appendChild(textSpan);
+    infoDiv.appendChild(kwSpan);
+
+    const showBtn = document.createElement('button');
+    showBtn.type = 'button';
+    showBtn.className = 'lff-show-btn';
+    showBtn.title = 'Mostra questo post';
+    showBtn.textContent = 'Mostra';
+
     showBtn.addEventListener('click', () => {
       post.dataset.lffUserAllowed = 'true';
       post.classList.remove('lff-hidden');
+      post.style.removeProperty('display');
       placeholder.remove();
     }, { once: true });
+
+    placeholder.appendChild(infoDiv);
+    placeholder.appendChild(showBtn);
   }
 
   function removePlaceholder(post) {
@@ -283,7 +315,8 @@
 
     // Ascolto in tempo reale dei cambiamenti dalle opzioni (popup)
     ext.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local') {
+      // In Firefox o Chrome l'evento può riportare 'local' o non specificare areaName
+      if (!areaName || areaName === 'local') {
         let changed = false;
         if (changes.enabled) {
           config.enabled = changes.enabled.newValue;
@@ -298,10 +331,13 @@
           changed = true;
         }
         if (changed) {
+          console.log('[LinkedIn Feed Filter] Configurazione aggiornata:', config);
           reevaluateAll();
         }
       }
     });
+
+    console.log('[LinkedIn Feed Filter] Inizializzato con successo su:', window.location.hostname);
   }
 
   // Avvio quando il DOM è pronto
